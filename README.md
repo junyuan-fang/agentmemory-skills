@@ -138,7 +138,7 @@ ccskill recall "你最近聊过的某个话题"   # 试试检索
 
 ---
 
-## agentmemory-skills 对标 Hermes:谁有什么
+## agentmemory-skills 对标 Hermes:都有什么
 
 | 能力 | Hermes | 本项目 |
 |---|:---:|:---:|
