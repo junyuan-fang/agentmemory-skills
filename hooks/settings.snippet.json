@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/ABSOLUTE/PATH/TO/agentmemory-skills/hooks/distill-on-end.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

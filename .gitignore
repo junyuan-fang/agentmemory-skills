@@ -1,0 +1,24 @@
+# Personal data — never commit
+data/sessions.db
+data/sessions.db-*
+data/archive/
+data/profiles/
+data/identities.json
+data/user-profile.md
+data/user-profile.md.bak
+data/cron.log
+data/tasks/
+
+# Auto-extracted skills are personal (your distilled workflows).
+# They live in ~/.claude/skills by default; this rule only matters if you
+# point AGENTMEMORY_SKILLS_DIR back into this repo. Comment it out to
+# version your skills.
+skills/*/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor / OS
+.DS_Store
+*.swp

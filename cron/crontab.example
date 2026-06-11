@@ -1,0 +1,28 @@
+# agentmemory-skills cron 示例
+# 安装: crontab -e , 把下面几行按你的实际路径改好后粘进去。
+# cron 的 PATH 很简陋, 所以全用绝对路径。
+#
+# 把这两个占位符替换成你的真实值:
+#   {{PYTHON}}  例: /home/you/miniforge3/bin/python3   (which python3)
+#   {{REPO}}    例: /home/you/code/agentmemory-skills   (本仓库绝对路径)
+
+# ⚠️ 必须先放这行, 否则脚本里的 `claude -p` 会找不到 claude CLI。
+# 把路径换成你的: dirname $(which claude)  和  dirname $(which python3)
+PATH=/home/you/.local/bin:/home/you/miniforge3/bin:/usr/local/bin:/usr/bin:/bin
+PYTHONIOENCODING=utf-8
+
+# 每小时增量索引 (新会话 / 新消息纳入)
+0 * * * * {{PYTHON}} {{REPO}}/scripts/index-sessions.py >> {{REPO}}/data/cron.log 2>&1
+
+# 每天 03:10 归档昨天的对话到 data/archive/<date>.md
+# (--date yesterday 由脚本解析,macOS 没有 GNU date -d 也能用)
+10 3 * * * {{PYTHON}} {{REPO}}/scripts/archive-session.py --date yesterday >> {{REPO}}/data/cron.log 2>&1
+
+# 每天 03:30 从昨天对话提炼新技能 (自动 commit + push)
+30 3 * * * {{PYTHON}} {{REPO}}/scripts/extract-skill.py --date yesterday >> {{REPO}}/data/cron.log 2>&1
+
+# 每天 04:00 更新用户画像 (merged + per-user, 自动 commit + push)
+0 4 * * * {{PYTHON}} {{REPO}}/scripts/update-user-profile.py --days 7 --per-user --commit >> {{REPO}}/data/cron.log 2>&1
+
+# 04:50 兜底同步: 把所有未推的 commit 一并推上去 (网络抖动的安全网)
+50 4 * * * {{REPO}}/scripts/daily-sync.sh >> {{REPO}}/data/cron.log 2>&1

@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# ccskill — agentmemory-skills unified CLI
+# Symlink to ~/.local/bin/ccskill (or any directory in PATH) for global access.
+#
+# Examples:
+#   ccskill recall "auth token"     # FTS search
+#   ccskill recall "auth token" --summary
+#   ccskill list                    # list skills
+#   ccskill show <slug>             # cat one skill
+#   ccskill extract --date 2026-05-14
+#   ccskill profile                 # cat merged profile
+#   ccskill profile --update        # refresh first
+#   ccskill context --person alice
+#   ccskill index                   # re-index
+#   ccskill sync                    # git pull/push
+set -euo pipefail
+
+# Repo root = parent of this script's dir (scripts/..); override with AGENTMEMORY_REPO.
+SELF="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+REPO="${AGENTMEMORY_REPO:-$(cd "$SELF/.." && pwd)}"
+PY="${PYTHON:-python3}"
+SCRIPTS="$REPO/scripts"
+DATA="$REPO/data"
+# 技能沉淀在 Claude Code 全局技能目录(新会话自动读取),与 extract-skill.py 一致
+SKILLS="${AGENTMEMORY_SKILLS_DIR:-$HOME/.claude/skills}"
+
+cmd="${1:-help}"; shift || true
+
+case "$cmd" in
+  recall)
+    "$PY" "$SCRIPTS/query-history.py" "$@"
+    ;;
+  index)
+    "$PY" "$SCRIPTS/index-sessions.py" "$@"
+    ;;
+  extract)
+    "$PY" "$SCRIPTS/extract-skill.py" "$@"
+    ;;
+  profile)
+    if [[ "${1:-}" == "--update" || "${1:-}" == "-u" ]]; then
+      shift
+      "$PY" "$SCRIPTS/update-user-profile.py" --days 7 --per-user "$@"
+    fi
+    echo "=== merged profile ==="
+    cat "$DATA/user-profile.md" 2>/dev/null || echo "(none yet — run: ccskill profile --update)"
+    if [[ -d "$DATA/profiles" ]]; then
+      echo
+      echo "=== per-user profiles ==="
+      ls -1 "$DATA/profiles/" 2>/dev/null
+    fi
+    ;;
+  status|doctor)
+    "$PY" "$SCRIPTS/status.py" "$@"
+    ;;
+  context)
+    "$PY" "$SCRIPTS/cross-platform-context.py" "$@"
+    ;;
+  archive)
+    "$PY" "$SCRIPTS/archive-session.py" "$@"
+    ;;
+  list|ls)
+    for d in "$SKILLS"/*/; do
+      [ -f "$d/SKILL.md" ] || continue
+      name=$(basename "$d")
+      desc=$(awk '/^description:/{sub(/^description: */,""); print; exit}' "$d/SKILL.md")
+      printf '%-32s %s\n' "$name" "$desc"
+    done
+    ;;
+  show|cat)
+    slug="${1:?usage: ccskill show <slug>}"
+    cat "$SKILLS/$slug/SKILL.md"
+    ;;
+  sync)
+    cd "$REPO"
+    git pull --rebase --autostash
+    git push
+    ;;
+  help|--help|-h|"")
+    grep -E "^#" "$0" | sed 's/^# \?//' | head -25
+    echo
+    echo "Subcommands:"
+    echo "  status              — self-check: hook/cron/index all installed?"
+    echo "  recall <query>      — FTS search history"
+    echo "  index               — rebuild SQLite index"
+    echo "  extract             — LLM-extract skills from a session"
+    echo "  profile [--update]  — view/refresh user profile"
+    echo "  context             — cross-platform recent activity"
+    echo "  archive             — dump session to markdown"
+    echo "  list                — list all skills"
+    echo "  show <slug>         — cat a skill's SKILL.md"
+    echo "  sync                — git pull + push"
+    ;;
+  *)
+    echo "unknown subcommand: $cmd" >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,10 @@
+{
+  "_comment": "把一个真人映射到 ta 在所有平台上的 user_key。cross-platform-context.py 用它来识别『同一个人在不同平台』。某人出现在第二个平台时就在这里加一条。复制本文件为 identities.json 再填真实值(identities.json 已被 .gitignore 排除)。",
+  "alice": [
+    "weixin:dm:xxxxxxxxxxxxxxxxxxxx@im.wechat",
+    "telegram:dm:123456789"
+  ],
+  "bob": [
+    "feishu:oc:yyyyyyyyyyyyyyyy:ou_zzzzzzzzzzzz"
+  ]
+}
