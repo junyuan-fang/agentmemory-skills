@@ -38,7 +38,7 @@
 - **为何不做**:个人记忆助手用不上,且需要训练基建。归档的 markdown(`data/archive/`)已是现成的 trajectory 来源,真要做可从这里导出。
 
 ### 更多 IM 桥接(WhatsApp / Signal 等)
-- 取决于你接的那个 agent / IM 桥支持哪些平台,不在本项目范围。本项目只消费它导出的 JSON。
+- 取决于底层 IM 桥(cc-connect)支持哪些平台,不在本项目范围。
 
 ## 欢迎 PR
 

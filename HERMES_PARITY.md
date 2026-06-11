@@ -4,7 +4,7 @@
 
 ## 总体设计
 
-- **不碰 Claude Code** —— 只读它自己写的 transcript(`~/.claude/projects/**/*.jsonl`)做事后加工,零侵入
+- **不改 IM 桥(cc-connect)源码** —— 只复用它产出的 session JSON(`~/.cc-connect/sessions/*.json`)做事后加工
 - **LLM 任务用 `claude -p` 子进程** —— 走你已有的 Claude Code 凭证,不管理 API key、不另计费
 - **数据存 SQLite + markdown** —— 纯文件系统,易迁移、易备份、易 grep
 - **cron 驱动,不跑 daemon** —— 单点失败少,调试简单
@@ -15,7 +15,7 @@
 
 | Hermes | 本项目 |
 |---|---|
-| Agent 完成任务后主动判定「这是新技能」并存档 | 三种触发提炼可复用 skill:关闭即沉淀 hook / cron / 主动 `/skill-extract` |
+| Agent 完成任务后主动判定「这是新技能」并存档 | cron 每天 03:30 扫昨天对话,LLM 提炼可复用 skill |
 | 技能越用越精 | 同 slug 检测 → LLM 把旧 SKILL.md + 新对话**合并**成 v2/v3 |
 | 兼容 agentskills.io 开放标准 | SKILL.md = YAML frontmatter + body,兼容 Claude Code 原生 skill 发现 |
 
@@ -26,12 +26,7 @@
 - `write_skill()` —— **核心**:同 slug 已存在 → 走 `MERGE_PROMPT` 让 LLM 增量合并(保旧吸新),递增 `version:` 字段
 - 写完自动 `git commit` + `git push`(网络通时)
 
-**三种沉淀触发**(详见 [`hooks/README.md`](hooks/README.md)):
-1. **关闭即沉淀(被动)**:`hooks/distill-on-end.sh` 挂 Claude Code `SessionEnd` hook,关闭会话时对刚结束的 session 跑 index + extract
-2. **定时沉淀**:cron 每天 03:30 扫昨天对话
-3. **主动沉淀**:会话里发 `/skill-extract`(`ccskill extract`)
-
-技能落到 `skills/<slug>/SKILL.md`。
+**调用**:`ccskill extract --date 2026-05-14`,或 cron 自动跑。技能沉淀到 `~/.claude/skills/<slug>/SKILL.md`(Claude Code 全局技能目录,新会话自动读取;`AGENTMEMORY_SKILLS_DIR` 可改)。
 
 ## #2 长期记忆 & FTS5 全文检索
 
@@ -97,14 +92,17 @@
 ## 数据流总览
 
 ```
-你用 Claude Code 聊天
+IM 用户发消息
    │
    ▼
-Claude Code
-   │ 读 CLAUDE.md → @-include 当前 user-profile.md(画像注入)
-   │ 自动写 transcript → ~/.claude/projects/**/*.jsonl
+IM 桥(cc-connect)长轮询接到
    │
-   ├──→ Claude 回复 → 你
+   ▼
+Claude Code 子进程
+   │ 读 CLAUDE.md → @-include 当前 user-profile.md(画像注入)
+   │ 写 ~/.cc-connect/sessions/*.json
+   │
+   ├──→ Claude 回复 → IM 桥 → 用户
    │
    └──→ (每小时) index → SQLite FTS5
         (每天)  archive / extract-skill / update-profile
