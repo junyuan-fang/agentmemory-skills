@@ -1,3 +1,5 @@
+[English](README.en.md) | **简体中文**
+
 # agentmemory-skills
 
 **给 Claude Code 装上「长期记忆」和「自我成长」——而且不花一分额外的 API 钱。**
